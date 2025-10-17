@@ -38,7 +38,7 @@ const Hero = () => {
               {/* Why Us Button - Plain */}
               <button
                 onClick={handleWhyUsClick}
-                className="w-48 sm:w-56 h-12 sm:h-14 text-base sm:text-lg font-semibold rounded-full border bg-background hover:scale-105 transition-transform duration-300"
+                className="w-56 sm:w-64 h-14 sm:h-16 text-lg sm:text-xl font-semibold rounded-full border bg-background hover:scale-105 transition-transform duration-300 button-subtle-pulse"
               >
                 Why Us
               </button>

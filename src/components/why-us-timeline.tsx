@@ -18,7 +18,7 @@ const timelineItems = [
   },
   {
     title: "Done For You",
-    description: "We handle the work while you focus on what matters most—your business and vision."
+    description: "We handle the work while you focus on what matters most."
   }
 ];
 

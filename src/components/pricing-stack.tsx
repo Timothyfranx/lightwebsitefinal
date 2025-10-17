@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useIsMobile } from '../hooks/use-mobile';
 
 const pricingTiers = [
   {
@@ -74,7 +75,7 @@ const pricingTiers = [
   }
 ];
 
-const PricingCard = ({ tier, isMobile = false }) => {
+const PricingCard = ({ tier, isMobile = false, isExpanded, onCardClick }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -100,11 +101,12 @@ const PricingCard = ({ tier, isMobile = false }) => {
   };
 
   const glowPulse = {
-    scale: [1, 1.01, 1],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: [0.25, 0.46, 0.45, 0.94]
+    glow: {
+      scale: [1, 1.01, 1],
+      transition: {
+        duration: 3,
+        repeat: Infinity
+      }
     }
   };
 
@@ -119,27 +121,41 @@ const PricingCard = ({ tier, isMobile = false }) => {
 
   const [isHovered, setIsHovered] = useState(false);
 
+  const handleCardClick = () => {
+    if (isMobile) {
+      onCardClick(tier.id);
+    }
+  };
+
   return (
     <motion.div
-      className="bg-background border-4 border-foreground rounded-2xl p-8 shadow-2xl relative overflow-hidden cursor-pointer will-change-transform"
+      className={`pricing-card bg-background border-4 rounded-2xl p-8 shadow-2xl relative overflow-hidden cursor-pointer will-change-transform ${
+        isMobile
+          ? isExpanded
+            ? 'border-foreground shadow-lg'
+            : 'border-foreground/30'
+          : 'border-foreground'
+      }`}
       initial={{ scale: 0.95, filter: "grayscale(0.3)", opacity: 0.8 }}
-      whileHover={{
+      whileHover={!isMobile ? {
         scale: 1.05,
         filter: "grayscale(0)",
         opacity: 1,
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 20px rgba(255, 255, 255, 0.1)",
         transition: { duration: 0.3, ease: "easeOut" }
-      }}
-      whileTap={{
+      } : {}}
+      whileTap={!isMobile ? {
         scale: 1.05,
         filter: "grayscale(0)",
         opacity: 1,
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 20px rgba(255, 255, 255, 0.1)",
         transition: { duration: 0.3, ease: "easeOut" }
-      }}
-      animate={glowPulse}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
+      } : { scale: 0.98 }}
+      variants={glowPulse}
+      animate={!isMobile ? "glow" : undefined}
+      onHoverStart={!isMobile ? () => setIsHovered(true) : undefined}
+      onHoverEnd={!isMobile ? () => setIsHovered(false) : undefined}
+      onClick={handleCardClick}
       style={{
         willChange: 'transform, filter, opacity',
         perspective: '2000px',
@@ -167,14 +183,17 @@ const PricingCard = ({ tier, isMobile = false }) => {
       >
         {tier.name}
       </motion.h3>
-      <motion.p
-        className="text-sm text-muted-foreground mb-4"
+      <motion.div
+        className="flex justify-between items-center mb-4"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        {tier.subtitle}
-      </motion.p>
+        <p className="text-sm text-muted-foreground">{tier.subtitle}</p>
+        {isMobile && (
+          <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+        )}
+      </motion.div>
 
       {/* Reply count or special message */}
       {tier.isSpecial ? (
@@ -205,56 +224,96 @@ const PricingCard = ({ tier, isMobile = false }) => {
             {tier.description}
           </motion.p>
 
-          {/* Features */}
-          <motion.ul
-            className="space-y-2 mb-4"
-            variants={containerVariants}
-            initial="hidden"
-            animate={isHovered ? "visible" : "hidden"}
-          >
-            {tier.features.map((feature, i) => (
-              <motion.li
-                key={i}
-                className="flex gap-2 text-sm"
-                variants={itemVariants}
+          {/* Features - Desktop: Show on hover, Mobile: Show when expanded */}
+          {isMobile ? (
+            isExpanded && (
+              <motion.ul
+                className="space-y-2 mb-4 animate-in fade-in slide-in-from-top-2 duration-300"
+                initial="hidden"
+                animate="visible"
+                variants={containerVariants}
               >
-                <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  variants={itemVariants}
-                  style={{ display: 'inline-block' }}
-                >
-                  {feature.split('').map((char, charIndex) => (
-                    <motion.span
-                      key={charIndex}
-                      initial={{ opacity: 0 }}
-                      variants={itemVariants}
-                      transition={{ delay: charIndex * 0.02 }}
-                      style={{ display: 'inline-block' }}
-                    >
-                      {char}
-                    </motion.span>
-                  ))}
-                </motion.span>
-              </motion.li>
-            ))}
-          </motion.ul>
-
-          {/* Perks */}
-          {tier.perks && (
-            <motion.div
-              className="bg-muted/30 rounded-lg p-3 mb-4"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <p className="font-semibold text-sm mb-1">Perks:</p>
-              <ul className="space-y-1 text-sm">
-                {tier.perks.map((perk, i) => (
-                  <li key={i}>• {perk}</li>
+                {tier.features.map((feature, i) => (
+                  <motion.li
+                    key={i}
+                    className="flex gap-2 text-sm"
+                    variants={itemVariants}
+                  >
+                    <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </motion.li>
                 ))}
-              </ul>
-            </motion.div>
+              </motion.ul>
+            )
+          ) : (
+            <motion.ul
+              className="space-y-2 mb-4"
+              variants={containerVariants}
+              initial="hidden"
+              animate={isHovered ? "visible" : "hidden"}
+            >
+              {tier.features.map((feature, i) => (
+                <motion.li
+                  key={i}
+                  className="flex gap-2 text-sm"
+                  variants={itemVariants}
+                >
+                  <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    variants={itemVariants}
+                    style={{ display: 'inline-block' }}
+                  >
+                    {feature.split('').map((char, charIndex) => (
+                      <motion.span
+                        key={charIndex}
+                        initial={{ opacity: 0 }}
+                        variants={itemVariants}
+                        transition={{ delay: charIndex * 0.02 }}
+                        style={{ display: 'inline-block' }}
+                      >
+                        {char}
+                      </motion.span>
+                    ))}
+                  </motion.span>
+                </motion.li>
+              ))}
+            </motion.ul>
+          )}
+
+          {/* Perks - Desktop: Always show, Mobile: Show when expanded */}
+          {tier.perks && (
+            isMobile ? (
+              isExpanded && (
+                <motion.div
+                  className="bg-muted/30 rounded-lg p-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-300"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <p className="font-semibold text-sm mb-1">Perks:</p>
+                  <ul className="space-y-1 text-sm">
+                    {tier.perks.map((perk, i) => (
+                      <li key={i}>• {perk}</li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )
+            ) : (
+              <motion.div
+                className="bg-muted/30 rounded-lg p-3 mb-4"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <p className="font-semibold text-sm mb-1">Perks:</p>
+                <ul className="space-y-1 text-sm">
+                  {tier.perks.map((perk, i) => (
+                    <li key={i}>• {perk}</li>
+                  ))}
+                </ul>
+              </motion.div>
+            )
           )}
         </>
       )}
@@ -286,6 +345,24 @@ const PricingCard = ({ tier, isMobile = false }) => {
 };
 
 export const PricingStack = () => {
+  const isMobile = useIsMobile();
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+
+  const handleCardClick = (tierId: number) => {
+    setExpandedCard(expandedCard === tierId ? null : tierId);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isMobile && !(e.target as Element).closest('.pricing-card')) {
+        setExpandedCard(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isMobile]);
+
   return (
     <section id="plans" className="py-20 px-4 bg-white dark:bg-black transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
@@ -319,7 +396,12 @@ export const PricingStack = () => {
                 ease: "easeOut"
               }}
             >
-              <PricingCard tier={tier} />
+              <PricingCard
+                tier={tier}
+                isMobile={isMobile}
+                isExpanded={expandedCard === tier.id}
+                onCardClick={handleCardClick}
+              />
             </motion.div>
           ))}
         </div>

@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { useIsMobile } from '../hooks/use-mobile';
 
 const processSteps = [
   {
@@ -83,6 +85,15 @@ const ProcessCard = ({
 const ProcessSection = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const isMobile = useIsMobile();
+
+  const glowPulse = {
+    scale: [1, 1.01, 1],
+    transition: {
+      duration: 3,
+      repeat: Infinity
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -120,25 +131,29 @@ const ProcessSection = () => {
             <div
               key={index}
               className={`
-                flex gap-4
-                transition-all duration-700
-                opacity-100 translate-x-0
+                flex gap-4 mb-6
+                transition-all duration-500 ease-out
+                ${isVisible
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-8'}
               `}
-              style={{ transitionDelay: `${index * 100}ms` }}
+              style={{
+                transitionDelay: `${index * 100}ms`
+              }}
             >
-              {/* Step number */}
-              <div className="flex-shrink-0">
-                <div className="
-                  w-12 h-12 flex items-center justify-center
-                  bg-background border-3 border-foreground
-                  rounded-full font-bold text-foreground
-                ">
-                  {index + 1}
-                </div>
+              {/* Number badge */}
+              <div className="
+                flex-shrink-0
+                w-12 h-12
+                flex items-center justify-center
+                bg-background border-3 border-foreground
+                rounded-full font-bold
+              ">
+                {index + 1}
               </div>
 
-              {/* Step content */}
-              <div className="flex-1 pt-1">
+              {/* Content */}
+              <div className="flex-1">
                 <h3 className="font-bold text-foreground mb-1">
                   {step.title}
                 </h3>
@@ -149,11 +164,6 @@ const ProcessSection = () => {
                   {step.description}
                 </p>
               </div>
-
-              {/* Vertical connector line (except last step) */}
-              {index < 3 && (
-                <div className="absolute left-6 top-full h-6 border-l-2 border-foreground/30" />
-              )}
             </div>
           ))}
         </div>
